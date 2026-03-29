@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Iron Log — Body Composition Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #080c0e;
+      --bg2: #0d1517;
+      --border: #0f1e1a;
+      --border2: #1a2e28;
+      --green: #7ecb9a;
+      --green-mid: #3a6b5a;
+      --green-dim: #2a4a3e;
+      --green-dark: #1e3530;
+      --text: #d4e8e0;
+      --text-dim: #4a6b60;
+      --red: #e07777;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Lora', serif;
+      min-height: 100vh;
+    }
+
+    /* HEADER */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 20px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+    .logo { line-height: 1; }
+    .logo h1 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: 5px;
+      color: var(--green);
+    }
+    .logo p {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 10px;
+      letter-spacing: 4px;
+      color: var(--green-dim);
+      margin-top: 2px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .status-dot {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-right: 6px;
+    }
+    .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+    .dot.offline { background: var(--red); }
+    .status-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--green-dim);
+      text-transform: uppercase;
+    }
+
+    /* NAV */
+    .nav-btn {
+      background: none;
+      border: none;
+      border-bottom: 1px solid transparent;
+      cursor: pointer;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      padding: 8px 16px;
+      color: var(--green-dim);
+      transition: all .2s;
+    }
+    .nav-btn.active { color: var(--green); border-bottom-color: var(--green); }
+
+    .btn-secondary {
+      background: var(--bg2);
+      color: var(--text-dim);
+      border: 1px solid var(--border2);
+      cursor: pointer;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11px;
+      letter-spacing: 2px;
+      padding: 7px 14px;
+      border-radius: 3px;
+      transition: all .2s;
+      text-transform: uppercase;
+    }
+    .btn-secondary:hover { border-color: var(--green-mid); color: var(--text); }
+
+    /* SNAPSHOT */
+    #snapshot {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .metric-card {
+      flex: 1 1 110px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 12px 16px;
+    }
+    .metric-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--green-dim);
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    .metric-value {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1;
+    }
+    .metric-unit { font-size: 12px; color: var(--green-mid); margin-left: 2px; }
+    .metric-delta { font-size: 11px; font-family: monospace; margin-top: 4px; }
+
+    /* MAIN */
+    main { padding: 28px 24px; }
+
+    /* FORM */
+    #log-view { max-width: 500px; }
+    .section-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px;
+      letter-spacing: 4px;
+      color: var(--green-mid);
+      text-transform: uppercase;
+      margin-bottom: 22px;
+    }
+
+    .form-grid { display: grid; gap: 16px; }
+    .field label {
+      display: block;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--green-mid);
+      margin-bottom: 6px;
+    }
+    .required-tag { color: var(--green); font-size: 9px; letter-spacing: 1px; margin-left: 6px; }
+    .field input {
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      padding: 11px 14px;
+      border-radius: 3px;
+      width: 100%;
+      font-size: 16px;
+      font-family: 'Lora', serif;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+      -webkit-appearance: none;
+    }
+    .field input:focus { border-color: var(--green-mid); box-shadow: 0 0 0 3px rgba(58,107,90,.15); }
+    .field input.highlight { border-color: var(--green-mid); }
+
+    .divider {
+      border-top: 1px solid var(--border);
+      padding-top: 18px;
+      margin-top: 4px;
+    }
+    .optional-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--green-dark);
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+    .form-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 26px;
+      flex-wrap: wrap;
+    }
+    .btn-primary {
+      background: var(--green-mid);
+      color: var(--text);
+      border: none;
+      cursor: pointer;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 15px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      padding: 13px 30px;
+      border-radius: 3px;
+      transition: background .2s;
+    }
+    .btn-primary:hover { background: #4a8a72; }
+    .btn-primary:disabled { opacity: .6; cursor: default; }
+
+    .status-msg {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      letter-spacing: 1px;
+    }
+    .status-msg.saved { color: var(--green); }
+    .status-msg.error { color: var(--red); }
+    .status-msg.saving { color: var(--green-mid); }
+
+    .error-msg {
+      color: var(--red);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px;
+      letter-spacing: 1px;
+      margin-top: 12px;
+    }
+
+    /* SPINNER */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid var(--border2);
+      border-top-color: var(--green);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      vertical-align: middle;
+    }
+
+    /* HISTORY */
+    #history-view { display: none; }
+    .history-loading {
+      display: flex; align-items: center; gap: 10px;
+      color: var(--green-dim);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px; letter-spacing: 2px;
+    }
+    .no-entries {
+      color: var(--green-dark);
+      font-style: italic;
+    }
+
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    thead tr { border-bottom: 1px solid var(--border); }
+    th {
+      text-align: left;
+      padding: 8px 12px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--green-dim);
+      font-weight: 400;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    th.right { text-align: right; }
+    tbody tr { border-bottom: 1px solid #0d1214; transition: background .15s; }
+    tbody tr:hover td { background: var(--bg2); }
+    td { padding: 11px 12px; }
+    .td-date {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px;
+      color: var(--green);
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+    .td-weight {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .td-opt { color: var(--green-dark); }
+    .td-actions { text-align: right; white-space: nowrap; }
+    .btn-edit {
+      background: var(--bg2);
+      color: var(--text-dim);
+      border: 1px solid var(--border2);
+      cursor: pointer;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11px;
+      letter-spacing: 1px;
+      padding: 4px 10px;
+      border-radius: 3px;
+    }
+    .btn-edit:hover { border-color: var(--green-mid); color: var(--text); }
+
+    /* MOBILE */
+    @media (max-width: 480px) {
+      header { padding: 16px; }
+      .logo h1 { font-size: 28px; }
+      main { padding: 20px 16px; }
+      #snapshot { padding: 12px 16px; }
+      .three-col { grid-template-columns: 1fr; }
+      .metric-card { flex: 1 1 calc(50% - 4px); }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">
+      <h1>IRON LOG</h1>
+      <p>Body Composition Tracker</p>
+    </div>
+    <div class="header-right">
+      <div class="status-dot">
+        <div class="dot" id="status-dot"></div>
+        <span class="status-label" id="status-label">Google Sheets</span>
+      </div>
+      <button class="nav-btn active" id="nav-log" onclick="showView('log')">Log</button>
+      <button class="nav-btn" id="nav-history" onclick="showView('history')">History</button>
+      <button class="btn-secondary" onclick="loadEntries()">↺ Refresh</button>
+    </div>
+  </header>
+
+  <div id="snapshot" style="display:none"></div>
+
+  <main>
+    <!-- LOG VIEW -->
+    <div id="log-view">
+      <div class="section-title" id="form-title">New Entry</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Date</label>
+          <input type="date" id="f-date" />
+        </div>
+        <div class="field">
+          <label>Weight (kg) <span class="required-tag">● REQUIRED</span></label>
+          <input type="number" step="0.1" placeholder="e.g. 82.5" id="f-weight" class="highlight" inputmode="decimal" />
+        </div>
+        <div class="divider">
+          <div class="optional-title">Body Composition Analysis — optional</div>
+          <div class="three-col">
+            <div class="field">
+              <label>Fat %</label>
+              <input type="number" step="0.1" placeholder="e.g. 18.2" id="f-fat" inputmode="decimal" />
+            </div>
+            <div class="field">
+              <label>Muscle %</label>
+              <input type="number" step="0.1" placeholder="e.g. 42.0" id="f-muscle" inputmode="decimal" />
+            </div>
+            <div class="field">
+              <label>Visceral Fat</label>
+              <input type="number" step="1" placeholder="e.g. 8" id="f-visceral" inputmode="numeric" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="error-msg" id="form-error" style="display:none"></div>
+      <div class="form-actions">
+        <button class="btn-primary" id="save-btn" onclick="handleSave()">Save to Sheets</button>
+        <button class="btn-secondary" id="cancel-btn" onclick="cancelEdit()" style="display:none">Cancel</button>
+        <span class="status-msg" id="save-status"></span>
+      </div>
+    </div>
+
+    <!-- HISTORY VIEW -->
+    <div id="history-view">
+      <div class="section-title" id="history-title">History</div>
+      <div id="history-content"></div>
+    </div>
+  </main>
+
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzVVdZ8kCDEj9aU7wlX4FFkEbs6a1lJCMr74F2Kj8ygVvdC0vfnBKnFJ7l1us2ocHKi/exec";
+
+    let entries = [];
+    let editId = null;
+    let currentView = 'log';
+
+    // Set today's date
+    const todayStr = new Date().toISOString().split('T')[0];
+    document.getElementById('f-date').value = todayStr;
+
+    function showView(view) {
+      currentView = view;
+      document.getElementById('log-view').style.display = view === 'log' ? 'block' : 'none';
+      document.getElementById('history-view').style.display = view === 'history' ? 'block' : 'none';
+      document.getElementById('nav-log').classList.toggle('active', view === 'log');
+      document.getElementById('nav-history').classList.toggle('active', view === 'history');
+      if (view === 'history') loadEntries();
+    }
+
+    function setStatus(online) {
+      document.getElementById('status-dot').className = 'dot' + (online ? '' : ' offline');
+      document.getElementById('status-label').textContent = online ? 'Google Sheets' : 'Sheets offline';
+      document.getElementById('status-label').style.color = online ? '' : 'var(--red)';
+    }
+
+    function loadEntries() {
+      if (currentView === 'history') {
+        document.getElementById('history-content').innerHTML =
+          '<div class="history-loading"><div class="spinner"></div> Loading from Google Sheets...</div>';
+      }
+
+      const callbackName = 'ironlog_cb_' + Date.now();
+      const script = document.createElement('script');
+      const timeout = setTimeout(() => {
+        setStatus(false);
+        delete window[callbackName];
+        script.remove();
+        if (currentView === 'history') {
+          document.getElementById('history-content').innerHTML =
+            '<div style="color:var(--red);font-family:\'Barlow Condensed\',sans-serif;font-size:13px;letter-spacing:1px">✗ Could not reach Google Sheets. Check connection and try refreshing.</div>';
+        }
+      }, 8000);
+
+      window[callbackName] = function(data) {
+        clearTimeout(timeout);
+        delete window[callbackName];
+        script.remove();
+        entries = (data.rows || []).map((r, i) => ({
+          id: i,
+          date: String(r['Date'] || '').trim(),
+          weight: r['Weight (kg)'] || '',
+          fatPct: r['Fat %'] || '',
+          musclePct: r['Muscle %'] || '',
+          visceralFat: r['Visceral Fat'] || '',
+        })).filter(r => r.date).sort((a, b) => b.date.localeCompare(a.date));
+        setStatus(true);
+        renderSnapshot();
+        if (currentView === 'history') renderHistory();
+      };
+
+      script.src = SCRIPT_URL + '?callback=' + callbackName;
+      script.onerror = () => {
+        clearTimeout(timeout);
+        delete window[callbackName];
+        setStatus(false);
+      };
+      document.head.appendChild(script);
+    }
+
+    function renderSnapshot() {
+      const snap = document.getElementById('snapshot');
+      const latest = entries[0];
+      const prev = entries[1];
+      if (!latest) { snap.style.display = 'none'; return; }
+
+      const metrics = [
+        { key: 'weight', label: 'Weight', unit: 'kg', lower: false },
+        { key: 'fatPct', label: 'Body Fat', unit: '%', lower: true },
+        { key: 'musclePct', label: 'Muscle', unit: '%', lower: false },
+        { key: 'visceralFat', label: 'Visceral Fat', unit: '', lower: true },
+      ];
+
+      let html = '';
+      metrics.filter(m => latest[m.key]).forEach(m => {
+        let deltaHtml = '';
+        if (prev && prev[m.key]) {
+          const d = parseFloat(latest[m.key]) - parseFloat(prev[m.key]);
+          if (d !== 0) {
+            const good = m.lower ? d < 0 : d > 0;
+            const color = d === 0 ? '#888' : (good ? 'var(--green)' : 'var(--red)');
+            deltaHtml = `<div class="metric-delta" style="color:${color}">${d > 0 ? '+' : ''}${d.toFixed(1)} vs prev</div>`;
+          }
+        }
+        html += `<div class="metric-card">
+          <div class="metric-label">${m.label}</div>
+          <div class="metric-value">${latest[m.key]}<span class="metric-unit">${m.unit}</span></div>
+          ${deltaHtml}
+        </div>`;
+      });
+
+      html += `<div class="metric-card">
+        <div class="metric-label">Last Logged</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;color:var(--green);margin-top:4px">${latest.date}</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;color:var(--green-dim);margin-top:4px">${entries.length} total entries</div>
+      </div>`;
+
+      snap.innerHTML = html;
+      snap.style.display = 'flex';
+    }
+
+    function renderHistory() {
+      const title = document.getElementById('history-title');
+      title.textContent = `History — ${entries.length} entries`;
+
+      if (entries.length === 0) {
+        document.getElementById('history-content').innerHTML =
+          '<p class="no-entries">No entries yet. Start by logging your first weigh-in.</p>';
+        return;
+      }
+
+      let rows = entries.map(e => `
+        <tr>
+          <td class="td-date">${e.date}</td>
+          <td class="td-weight">${e.weight ? e.weight + ' kg' : '—'}</td>
+          <td class="${e.fatPct ? '' : 'td-opt'}">${e.fatPct ? e.fatPct + '%' : '—'}</td>
+          <td class="${e.musclePct ? '' : 'td-opt'}">${e.musclePct ? e.musclePct + '%' : '—'}</td>
+          <td class="${e.visceralFat ? '' : 'td-opt'}">${e.visceralFat || '—'}</td>
+          <td class="td-actions"><button class="btn-edit" onclick="startEdit(${e.id})">edit</button></td>
+        </tr>`).join('');
+
+      document.getElementById('history-content').innerHTML = `
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Date</th><th>Weight</th><th>Fat %</th><th>Muscle %</th><th>Visceral Fat</th><th class="right"></th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    }
+
+    async function handleSave() {
+      const weight = document.getElementById('f-weight').value;
+      const errEl = document.getElementById('form-error');
+      if (!weight) {
+        errEl.textContent = '⚠ Weight is required.';
+        errEl.style.display = 'block';
+        return;
+      }
+      errEl.style.display = 'none';
+
+      const payload = {
+        date: document.getElementById('f-date').value,
+        weight,
+        fatPct: document.getElementById('f-fat').value || '',
+        musclePct: document.getElementById('f-muscle').value || '',
+        visceralFat: document.getElementById('f-visceral').value || '',
+      };
+
+      const btn = document.getElementById('save-btn');
+      const statusEl = document.getElementById('save-status');
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+      statusEl.className = 'status-msg saving';
+      statusEl.textContent = 'Saving...';
+
+      try {
+        await fetch(SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        statusEl.className = 'status-msg saved';
+        statusEl.textContent = '✓ Saved to Google Sheets';
+        resetForm();
+        setTimeout(() => { statusEl.textContent = ''; loadEntries(); }, 1800);
+      } catch {
+        statusEl.className = 'status-msg error';
+        statusEl.textContent = '✗ Failed — check connection';
+      }
+      btn.disabled = false;
+      btn.textContent = editId !== null ? 'Update Entry' : 'Save to Sheets';
+      editId = null;
+    }
+
+    function startEdit(id) {
+      const e = entries.find(x => x.id === id);
+      if (!e) return;
+      editId = id;
+      document.getElementById('f-date').value = e.date;
+      document.getElementById('f-weight').value = e.weight;
+      document.getElementById('f-fat').value = e.fatPct;
+      document.getElementById('f-muscle').value = e.musclePct;
+      document.getElementById('f-visceral').value = e.visceralFat;
+      document.getElementById('form-title').textContent = 'Edit Entry';
+      document.getElementById('save-btn').textContent = 'Update Entry';
+      document.getElementById('cancel-btn').style.display = 'inline-block';
+      showView('log');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function cancelEdit() {
+      editId = null;
+      resetForm();
+    }
+
+    function resetForm() {
+      editId = null;
+      document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+      document.getElementById('f-weight').value = '';
+      document.getElementById('f-fat').value = '';
+      document.getElementById('f-muscle').value = '';
+      document.getElementById('f-visceral').value = '';
+      document.getElementById('form-title').textContent = 'New Entry';
+      document.getElementById('save-btn').textContent = 'Save to Sheets';
+      document.getElementById('cancel-btn').style.display = 'none';
+      document.getElementById('form-error').style.display = 'none';
+    }
+
+    // Initial load
+    loadEntries();
+  </script>
+</body>
+</html>
